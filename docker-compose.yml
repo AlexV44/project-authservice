@@ -1,3 +1,5 @@
+name: authservice
+
 services:
   keycloak-db:
     image: postgres:15-alpine
@@ -6,8 +8,6 @@ services:
       POSTGRES_DB: ${KEYCLOAK_DB_NAME}
       POSTGRES_USER: ${KEYCLOAK_DB_USER}
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
-    ports:
-      - "5432:5432"
     volumes:
       - keycloak_db_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,24 +19,24 @@ services:
       - app-network
 
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0.1
+    build:
+      context: .
     container_name: keycloak_server
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://host.docker.internal:5432/${KEYCLOAK_DB_NAME}
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB_NAME}
       KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
       KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
-      KC_HOSTNAME_URL: https://crispy-space-telegram-j64p4qr5g6429pp-8080.app.github.dev
-      KC_PROXY_HEADERS: xforwarded
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-    command: start-dev --import-realm
+      KC_HOSTNAME: localhost
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HOSTNAME_STRICT: "false"
     ports:
       - "8080:8080"
     volumes:
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/auth-realm.json:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       keycloak-db:
         condition: service_healthy
